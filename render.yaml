@@ -1,10 +1,9 @@
 services:
   - type: web
     name: credit-card-fraud-detection
-    runtime: python
+    runtime: docker
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    envVars:
-      - key: PYTHON_VERSION
-        value: "3.12.7"
+    dockerfilePath: ./Dockerfile
+    # With Docker, the Python version is frozen inside the image (see Dockerfile),
+    # so no PYTHON_VERSION / runtime.txt is needed. The host cannot override it.
+    healthCheckPath: /health

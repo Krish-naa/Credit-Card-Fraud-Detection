@@ -146,14 +146,29 @@ Tests cover data validation, transformation (including leakage/imbalance guards)
 
 ---
 
-## Deploy to Render (free)
+## Deploy to Render (free) — Docker
+
+Deployment uses **Docker** so the Python version (3.12.7) is frozen inside the image. The host never picks the Python version, which permanently prevents dependency/wheel build failures.
 
 1. Push this repo to GitHub (the trained `final_models/*.pkl` are committed so the app serves without retraining).
 2. On [Render](https://render.com), create a new **Web Service** from your repo.
-3. Render reads `render.yaml` automatically. Otherwise set:
-   - Build command: `pip install -r requirements.txt`
-   - Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+3. Render detects the `Dockerfile` and `render.yaml` automatically:
+   - Runtime: **Docker**
+   - Health check path: `/health`
+   - No build/start commands needed — they come from the `Dockerfile`.
 4. Deploy. The free tier sleeps when idle, so the first request after inactivity may be slow (cold start).
+
+### Run the container locally (optional)
+
+```bash
+docker build -t fraud-app .
+docker run -p 8000:8000 fraud-app
+# open http://localhost:8000
+```
+
+### Why Docker (permanent fix)
+
+Pinned packages like `pandas==2.2.2` only ship prebuilt wheels for specific Python versions. If the host's Python is newer, pip compiles from source and fails (`metadata-generation-failed`). The Dockerfile bakes in `python:3.12.7-slim`, so the exact wheels always match — on Render, locally, or any host.
 
 ---
 

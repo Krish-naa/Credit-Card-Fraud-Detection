@@ -1,0 +1,29 @@
+# Keep the image small and the build fast - exclude everything not needed at runtime.
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+
+# Large dataset (not needed for inference - model is already trained)
+data/
+
+# Generated pipeline artifacts and logs
+artifacts/
+logs/
+
+# Tests and dev tooling
+tests/
+.pytest_cache/
+.git/
+.gitignore
+
+# Docs (optional at runtime; comment out if you want them in the image)
+docs/
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+.env
