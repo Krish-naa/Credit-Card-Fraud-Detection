@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batch Prediction Results</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Batch Prediction Results</h1>
+        </header>
+
+        <section class="card">
+            <div class="summary">
+                <div class="stat">
+                    <span class="stat-value">{{ total }}</span>
+                    <span class="stat-label">Total transactions</span>
+                </div>
+                <div class="stat fraud">
+                    <span class="stat-value">{{ fraud_count }}</span>
+                    <span class="stat-label">Flagged as fraud</span>
+                </div>
+            </div>
+            <p class="hint">Showing first {{ shown }} of {{ total }} rows.</p>
+            <div class="table-wrap">
+                {{ table | safe }}
+            </div>
+            <a href="/" class="primary btn-link">&larr; Back</a>
+        </section>
+    </div>
+</body>
+</html>

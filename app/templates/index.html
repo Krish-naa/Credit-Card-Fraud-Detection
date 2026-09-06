@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Card Fraud Detection</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Credit Card Fraud Detection</h1>
+            <p class="subtitle">Enter transaction details or upload a CSV to check for fraud.</p>
+        </header>
+
+        <section class="card">
+            <h2>Single Transaction</h2>
+            <form id="predict-form">
+                <div class="grid">
+                    <label>Time <input type="number" step="any" name="Time" value="0" required></label>
+                    <label>Amount <input type="number" step="any" name="Amount" value="149.62" min="0" required></label>
+                </div>
+
+                <details class="features">
+                    <summary>PCA Features (V1&ndash;V28)</summary>
+                    <div class="grid" id="v-grid"></div>
+                </details>
+
+                <div class="actions">
+                    <button type="button" id="sample-btn" class="secondary">Load Sample</button>
+                    <button type="submit" class="primary">Predict</button>
+                </div>
+            </form>
+
+            <div id="result" class="result hidden"></div>
+        </section>
+
+        <section class="card">
+            <h2>Batch Prediction (CSV Upload)</h2>
+            <p class="hint">Upload a CSV with columns: Time, V1&ndash;V28, Amount.</p>
+            <form action="/predict/csv" method="post" enctype="multipart/form-data">
+                <input type="file" name="file" accept=".csv" required>
+                <button type="submit" class="primary">Upload &amp; Predict</button>
+            </form>
+        </section>
+
+        <footer>
+            <p>API docs available at <a href="/docs">/docs</a></p>
+        </footer>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+</html>

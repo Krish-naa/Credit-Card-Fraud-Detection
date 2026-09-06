@@ -1,0 +1,29 @@
+# Dataset (large, license-bound - not committed)
+data/creditcard.csv
+
+# Generated pipeline artifacts
+artifacts/
+
+# Logs
+logs/
+
+# Python
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Environment / secrets
+.env
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Note: final_models/*.pkl ARE committed so Render can serve without retraining

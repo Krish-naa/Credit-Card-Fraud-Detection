@@ -1,0 +1,30 @@
+data_ingestion:
+  test_size: 0.2
+  random_state: 42
+  stratify: true
+
+data_transformation:
+  scaler: standard          # StandardScaler for Time and Amount
+  imbalance_method: smote   # smote | undersample | none
+  smote_random_state: 42
+
+model_trainer:
+  models:
+    - logistic_regression
+    - random_forest
+    - xgboost
+  cv_folds: 3                 # 3-fold stratified CV (dataset is large)
+  scoring: average_precision  # PR-AUC based model selection
+  threshold_search: true      # tune decision threshold for best F1 on fraud
+  random_state: 42
+
+evaluation:
+  primary_metric: pr_auc
+  min_pr_auc: 0.70            # minimum acceptable PR-AUC to accept the model
+  report_metrics:
+    - pr_auc
+    - roc_auc
+    - precision
+    - recall
+    - f1
+    - confusion_matrix
