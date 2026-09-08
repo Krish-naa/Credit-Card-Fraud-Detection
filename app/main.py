@@ -26,6 +26,10 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
+# Cache-busting token appended to static asset URLs so browsers always fetch the
+# latest CSS/JS after a deploy instead of serving a stale cached copy.
+ASSET_VERSION = str(int(os.path.getmtime(os.path.join(BASE_DIR, "static", "style.css"))))
+
 # Single shared pipeline instance (artifacts loaded lazily on first prediction)
 pipeline = PredictionPipeline()
 
@@ -37,7 +41,7 @@ def health():
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("index.html", {"request": request, "v": ASSET_VERSION})
 
 
 @app.post("/predict", response_model=PredictionResponse)
@@ -76,6 +80,7 @@ async def predict_csv(request: Request, file: UploadFile = File(...)):
                 "fraud_count": fraud_count,
                 "total": total,
                 "shown": min(100, total),
+                "v": ASSET_VERSION,
             },
         )
     except FraudException as e:
