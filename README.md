@@ -1,18 +1,20 @@
-# Credit Card Fraud Detection — End-to-End ML System
+# Credit Card Fraud Detection — End-to-End Machine Learning System
 
-An end-to-end machine learning system that detects fraudulent credit card transactions. It covers the full lifecycle: data ingestion, validation, transformation, class-imbalance handling, model training and selection, evaluation with imbalance-aware metrics, a REST API with a web UI, tests, and free deployment on Render.
+An end-to-end machine learning system for detecting fraudulent credit card transactions. The project implements the complete lifecycle: data ingestion, schema validation, data transformation, class-imbalance handling, model training and selection, evaluation with imbalance-aware metrics, a REST API with a web interface, an automated test suite, and containerised deployment.
 
-Design documents: [`docs/HLD.md`](docs/HLD.md) (High-Level Design) and [`docs/LLD.md`](docs/LLD.md) (Low-Level Design).
+**Live application:** https://credit-card-fraud-detection-1-done.onrender.com/
+
+Design documentation is available in [`docs/HLD.md`](docs/HLD.md) (High-Level Design) and [`docs/LLD.md`](docs/LLD.md) (Low-Level Design).
 
 ---
 
-## Why this project
+## Overview
 
-Fraud is rare (~0.17% of transactions), so the data is severely imbalanced. A model that always predicts "not fraud" would score ~99.8% accuracy while catching zero fraud. This project is built around that reality:
+Fraudulent transactions represent approximately 0.17% of the dataset, resulting in a severe class imbalance. A model that always predicts "not fraud" would achieve roughly 99.8% accuracy while detecting no fraud at all. The system is therefore designed around this constraint:
 
-- **Accuracy is deliberately not the target.** The primary metric is **PR-AUC** (average precision), with precision, recall, and F1 on the fraud class.
-- Class imbalance is handled with **SMOTE**, applied to the training set only.
-- Data leakage is prevented: the scaler is fit on training data only, and SMOTE never touches the test set.
+- **Accuracy is intentionally not the optimisation target.** The primary metric is **PR-AUC** (average precision), reported alongside precision, recall, and F1 on the fraud class.
+- Class imbalance is addressed using **SMOTE**, applied exclusively to the training set.
+- Data leakage is prevented by fitting the scaler on training data only and never applying SMOTE to the test set.
 
 ---
 
@@ -33,7 +35,7 @@ Data Ingestion  ->  Data Validation  ->  Data Transformation  ->  Model Trainer 
                                           /  /predict  /predict/csv  /health  /docs
                                                        │
                                                        ▼
-                                              Render (free hosting)
+                                        Docker container hosted on Render
 ```
 
 ---
@@ -57,15 +59,16 @@ MLProjectNew/
 ├── tests/                       # pytest suite
 ├── train.py                     # run the full training pipeline
 ├── requirements.txt
-├── Procfile, render.yaml, runtime.txt   # deployment
+├── Dockerfile, .dockerignore    # container definition
+├── render.yaml                  # Render deployment configuration
 └── README.md
 ```
 
 ---
 
-## Setup
+## Local setup
 
-Requires Python 3.12 (3.11 also works). The pinned dependencies have prebuilt wheels for these versions.
+The project requires Python 3.12 (3.11 is also supported). The pinned dependencies provide prebuilt wheels for these versions.
 
 ```bash
 # 1. Create and activate a virtual environment
@@ -79,7 +82,7 @@ pip install -r requirements.txt
 # 3. Add the dataset
 # Download 'creditcard.csv' from Kaggle:
 #   https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud
-# Place it in the data/ folder: data/creditcard.csv
+# Place the file in the data/ directory: data/creditcard.csv
 ```
 
 ---
@@ -99,15 +102,15 @@ The training summary (best model, threshold, test PR-AUC) is printed at the end.
 
 ---
 
-## Run the API locally
+## Running the API locally
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Then open:
-- **http://127.0.0.1:8000/** — web UI (single prediction form + CSV upload)
-- **http://127.0.0.1:8000/docs** — interactive Swagger docs
+The following are then available:
+- **http://127.0.0.1:8000/** — web interface (single-transaction form and CSV upload)
+- **http://127.0.0.1:8000/docs** — interactive Swagger documentation
 
 ### Endpoints
 
@@ -132,43 +135,46 @@ Response:
 { "prediction": 0, "label": "Legitimate", "probability": 0.0123 }
 ```
 
-The web UI has a **Load Sample** button that fills a real transaction so you can test instantly.
+The web interface includes a **Load Sample** button that populates the form with a real transaction for immediate testing.
 
 ---
 
-## Run tests
+## Testing
 
 ```bash
 pytest
 ```
 
-Tests cover data validation, transformation (including leakage/imbalance guards), the prediction pipeline, and the API. They use a small synthetic dataset, so they run without the full `creditcard.csv`.
+The test suite covers data validation, data transformation (including leakage and imbalance safeguards), the prediction pipeline, and the API. The tests operate on a small synthetic dataset and therefore run without requiring the full `creditcard.csv` file.
 
 ---
 
-## Deploy to Render (free) — Docker
+## Deployment
 
-Deployment uses **Docker** so the Python version (3.12.7) is frozen inside the image. The host never picks the Python version, which permanently prevents dependency/wheel build failures.
+The application is deployed on Render as a Docker container and is publicly accessible:
 
-1. Push this repo to GitHub (the trained `final_models/*.pkl` are committed so the app serves without retraining).
-2. On [Render](https://render.com), create a new **Web Service** from your repo.
-3. Render detects the `Dockerfile` and `render.yaml` automatically:
-   - Runtime: **Docker**
-   - Health check path: `/health`
-   - No build/start commands needed — they come from the `Dockerfile`.
-4. Deploy. The free tier sleeps when idle, so the first request after inactivity may be slow (cold start).
+**https://credit-card-fraud-detection-1-done.onrender.com/**
 
-### Run the container locally (optional)
+Additional endpoints on the live service:
+
+- Interactive API documentation: [`/docs`](https://credit-card-fraud-detection-1-done.onrender.com/docs)
+- Health check: [`/health`](https://credit-card-fraud-detection-1-done.onrender.com/health)
+
+> **Note:** The service runs on Render's free tier, which suspends the instance after a period of inactivity. The first request following a period of inactivity may take 30–50 seconds while the instance restarts (a cold start), after which responses are immediate.
+
+Deployment is defined by the [`Dockerfile`](Dockerfile) and [`render.yaml`](render.yaml). The container image pins the Python version internally, so the runtime environment is fully deterministic and independent of the host's default Python version. The trained artefacts (`final_models/*.pkl`) are committed to the repository, allowing the service to serve predictions without retraining.
+
+### Running the container locally
 
 ```bash
 docker build -t fraud-app .
 docker run -p 8000:8000 fraud-app
-# open http://localhost:8000
+# The application is then available at http://localhost:8000
 ```
 
-### Why Docker (permanent fix)
+### Environment determinism
 
-Pinned packages like `pandas==2.2.2` only ship prebuilt wheels for specific Python versions. If the host's Python is newer, pip compiles from source and fails (`metadata-generation-failed`). The Dockerfile bakes in `python:3.12.7-slim`, so the exact wheels always match — on Render, locally, or any host.
+Pinned dependencies such as `pandas==2.2.2` provide prebuilt wheels only for specific Python versions. If the host uses a newer Python version, pip attempts to compile the package from source, which typically fails. To eliminate this class of failure, the `Dockerfile` fixes the interpreter to `python:3.12.7-slim`, ensuring the correct wheels are always used regardless of where the image runs.
 
 ---
 
@@ -177,16 +183,16 @@ Pinned packages like `pandas==2.2.2` only ship prebuilt wheels for specific Pyth
 - `config/schema.yaml` — expected columns, dtypes, target, feature order.
 - `config/params.yaml` — test split, imbalance method (`smote` / `undersample` / `none`), models to compare, CV folds, metrics, and the minimum PR-AUC to accept a model.
 
-Change the imbalance method or model list here without touching code.
+The imbalance method and the list of candidate models can be changed here without modifying any code.
 
 ---
 
-## Key design decisions (interview talking points)
+## Key design decisions
 
-1. **Imbalance-aware metrics.** PR-AUC drives model selection; accuracy is reported but never used to choose a model.
-2. **No data leakage.** Scaler fit on train only; SMOTE on train only; test set stays untouched until evaluation.
-3. **Threshold tuning.** The decision threshold is tuned for best F1 on the fraud class rather than left at 0.5.
-4. **Modular pipeline.** Each stage is an isolated component with typed config and artifact objects, mirroring production ML systems.
-5. **Reproducibility.** Fixed random seeds and pinned dependencies.
-6. **Inference-only deployment.** Training runs offline; the deployed service just loads artifacts, which keeps it reliable on free hosting.
-```
+1. **Imbalance-aware metrics.** PR-AUC drives model selection; accuracy is reported but is never used as the selection criterion.
+2. **No data leakage.** The scaler is fitted on the training set only, SMOTE is applied to the training set only, and the test set remains untouched until evaluation.
+3. **Threshold tuning.** The decision threshold is tuned to maximise F1 on the fraud class rather than defaulting to 0.5.
+4. **Modular pipeline.** Each stage is an isolated component with typed configuration and artefact objects, reflecting production machine learning system design.
+5. **Reproducibility.** Random seeds are fixed and dependencies are pinned; the container fixes the Python version.
+6. **Inference-only deployment.** Training is performed offline and the deployed service loads pre-computed artefacts, which keeps the hosted application lightweight and reliable.
+```https://credit-card-fraud-detection-1-done.onrender.com/
