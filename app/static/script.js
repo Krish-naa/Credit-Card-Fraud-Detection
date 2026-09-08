@@ -1,4 +1,4 @@
-// Build the V1-V28 input fields dynamically
+// ---------- Build the V1-V28 input fields dynamically ----------
 const vGrid = document.getElementById("v-grid");
 for (let i = 1; i <= 28; i++) {
     const label = document.createElement("label");
@@ -13,7 +13,17 @@ for (let i = 1; i <= 28; i++) {
     vGrid.appendChild(label);
 }
 
-// A real legitimate sample row from the dataset (for quick testing)
+// ---------- Tab switching ----------
+document.querySelectorAll(".tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById("panel-" + tab.dataset.tab).classList.add("active");
+    });
+});
+
+// ---------- Sample data (a real legitimate transaction) ----------
 const SAMPLE = {
     Time: 0, V1: -1.3598071336738, V2: -0.0727811733098497, V3: 2.53634673796914,
     V4: 1.37815522427443, V5: -0.338320769942518, V6: 0.462387777762292,
@@ -27,24 +37,63 @@ const SAMPLE = {
     V28: -0.0210530534538215, Amount: 149.62
 };
 
+const form = document.getElementById("predict-form");
+
 document.getElementById("sample-btn").addEventListener("click", () => {
-    const form = document.getElementById("predict-form");
     for (const [key, value] of Object.entries(SAMPLE)) {
         if (form.elements[key]) form.elements[key].value = value;
     }
 });
 
-document.getElementById("predict-form").addEventListener("submit", async (e) => {
+document.getElementById("reset-btn").addEventListener("click", () => {
+    for (const el of form.elements) {
+        if (el.name) el.value = el.name === "Amount" ? "149.62" : "0";
+    }
+    document.getElementById("result").classList.remove("show", "fraud", "legit");
+});
+
+// ---------- Animated gauge ----------
+const RADIUS = 60;
+const CIRC = 2 * Math.PI * RADIUS;
+const gaugeFill = document.getElementById("gauge-fill");
+gaugeFill.style.strokeDasharray = CIRC;
+gaugeFill.style.strokeDashoffset = CIRC;
+
+function animateGauge(prob, isFraud) {
+    const color = isFraud ? "#f43f5e" : "#22c55e";
+    gaugeFill.style.stroke = color;
+    // reset then animate
+    gaugeFill.style.strokeDashoffset = CIRC;
+    const target = CIRC * (1 - prob);
+    requestAnimationFrame(() => {
+        gaugeFill.style.strokeDashoffset = target;
+    });
+
+    // count-up number
+    const numEl = document.getElementById("gauge-num");
+    const end = Math.round(prob * 100);
+    let cur = 0;
+    const step = Math.max(1, Math.round(end / 30));
+    clearInterval(numEl._timer);
+    numEl._timer = setInterval(() => {
+        cur += step;
+        if (cur >= end) { cur = end; clearInterval(numEl._timer); }
+        numEl.textContent = cur + "%";
+    }, 20);
+}
+
+// ---------- Predict ----------
+form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const form = e.target;
     const data = {};
     for (const el of form.elements) {
         if (el.name) data[el.name] = parseFloat(el.value);
     }
 
     const resultBox = document.getElementById("result");
-    resultBox.className = "result";
-    resultBox.textContent = "Predicting...";
+    const loading = document.getElementById("loading");
+    resultBox.classList.remove("show", "fraud", "legit");
+    loading.style.display = "block";
 
     try {
         const res = await fetch("/predict", {
@@ -52,18 +101,61 @@ document.getElementById("predict-form").addEventListener("submit", async (e) => 
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data),
         });
+        loading.style.display = "none";
+
         if (!res.ok) {
             const err = await res.json();
-            resultBox.className = "result fraud";
-            resultBox.textContent = "Error: " + (err.detail || res.status);
+            resultBox.classList.add("show", "fraud");
+            document.getElementById("verdict-tag").innerHTML = "&#9888; Error";
+            document.getElementById("verdict-note").textContent = err.detail || ("Request failed (" + res.status + ")");
+            document.getElementById("gauge-num").textContent = "--";
             return;
         }
+
         const out = await res.json();
-        resultBox.className = "result " + (out.prediction === 1 ? "fraud" : "legit");
-        const pct = (out.probability * 100).toFixed(2);
-        resultBox.innerHTML = `<strong>${out.label}</strong><span class="prob">Fraud probability: ${pct}%</span>`;
+        const isFraud = out.prediction === 1;
+        resultBox.classList.add("show", isFraud ? "fraud" : "legit");
+
+        animateGauge(out.probability, isFraud);
+
+        document.getElementById("verdict-tag").innerHTML = isFraud
+            ? "&#128680; Fraudulent"
+            : "&#9989; Legitimate";
+        document.getElementById("verdict-note").textContent = isFraud
+            ? "This transaction shows patterns consistent with fraud. It should be flagged for review."
+            : "This transaction appears normal and is unlikely to be fraudulent.";
     } catch (err) {
-        resultBox.className = "result fraud";
-        resultBox.textContent = "Request failed: " + err.message;
+        loading.style.display = "none";
+        resultBox.classList.add("show", "fraud");
+        document.getElementById("verdict-tag").innerHTML = "&#9888; Error";
+        document.getElementById("verdict-note").textContent = "Request failed: " + err.message;
     }
+});
+
+// ---------- Dropzone (batch upload) ----------
+const dropzone = document.getElementById("dropzone");
+const fileInput = document.getElementById("file-input");
+const fname = document.getElementById("fname");
+
+fileInput.addEventListener("change", () => {
+    if (fileInput.files.length) fname.textContent = "Selected: " + fileInput.files[0].name;
+});
+
+["dragenter", "dragover"].forEach((ev) =>
+    dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.add("dragover"); })
+);
+["dragleave", "drop"].forEach((ev) =>
+    dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.remove("dragover"); })
+);
+dropzone.addEventListener("drop", (e) => {
+    if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        fname.textContent = "Selected: " + e.dataTransfer.files[0].name;
+    }
+});
+
+document.getElementById("csv-form").addEventListener("submit", () => {
+    const btn = document.getElementById("upload-btn");
+    btn.innerHTML = "Processing...";
+    btn.disabled = true;
 });

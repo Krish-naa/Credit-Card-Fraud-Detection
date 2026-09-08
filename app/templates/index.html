@@ -7,47 +7,102 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+
     <div class="container">
         <header>
+            <span class="badge"><span class="dot"></span> Live ML Model &middot; Random Forest</span>
             <h1>Credit Card Fraud Detection</h1>
-            <p class="subtitle">Enter transaction details or upload a CSV to check for fraud.</p>
+            <p class="subtitle">Real-time fraud scoring powered by machine learning. Analyze a single transaction or upload a batch.</p>
         </header>
 
-        <section class="card">
-            <h2>Single Transaction</h2>
-            <form id="predict-form">
-                <div class="grid">
-                    <label>Time <input type="number" step="any" name="Time" value="0" required></label>
-                    <label>Amount <input type="number" step="any" name="Amount" value="149.62" min="0" required></label>
+        <div class="tabs">
+            <button class="tab active" data-tab="single">Single Transaction</button>
+            <button class="tab" data-tab="batch">Batch Upload</button>
+        </div>
+
+        <!-- Single transaction panel -->
+        <section class="panel active" id="panel-single">
+            <div class="card">
+                <h2>Analyze a Transaction</h2>
+                <p class="desc">Enter the transaction details below. The V1&ndash;V28 fields are anonymized PCA features from the dataset.</p>
+
+                <form id="predict-form">
+                    <div class="grid">
+                        <label>Time (seconds)
+                            <input type="number" step="any" name="Time" value="0" required>
+                        </label>
+                        <label>Amount ($)
+                            <input type="number" step="any" name="Amount" value="149.62" min="0" required>
+                        </label>
+                    </div>
+
+                    <details class="features">
+                        <summary>PCA Features (V1&ndash;V28)</summary>
+                        <div class="grid" id="v-grid"></div>
+                    </details>
+
+                    <div class="actions">
+                        <button type="button" id="sample-btn" class="secondary">&#9889; Load Sample</button>
+                        <button type="button" id="reset-btn" class="secondary">&#8635; Reset</button>
+                        <button type="submit" class="primary">&#128269; Predict Fraud</button>
+                    </div>
+                </form>
+
+                <div id="result" class="result">
+                    <div class="result-inner">
+                        <div class="gauge">
+                            <svg width="150" height="150" viewBox="0 0 150 150">
+                                <circle class="track" cx="75" cy="75" r="60"></circle>
+                                <circle class="fill" id="gauge-fill" cx="75" cy="75" r="60"></circle>
+                            </svg>
+                            <div class="pct">
+                                <span class="num" id="gauge-num">0%</span>
+                                <span class="lbl">FRAUD RISK</span>
+                            </div>
+                        </div>
+                        <div class="verdict">
+                            <div class="tag" id="verdict-tag"></div>
+                            <p class="note" id="verdict-note"></p>
+                        </div>
+                    </div>
                 </div>
 
-                <details class="features">
-                    <summary>PCA Features (V1&ndash;V28)</summary>
-                    <div class="grid" id="v-grid"></div>
-                </details>
-
-                <div class="actions">
-                    <button type="button" id="sample-btn" class="secondary">Load Sample</button>
-                    <button type="submit" class="primary">Predict</button>
+                <div id="loading" class="loading" style="display:none;">
+                    <div class="spinner"></div>
+                    Scoring transaction...
                 </div>
-            </form>
-
-            <div id="result" class="result hidden"></div>
+            </div>
         </section>
 
-        <section class="card">
-            <h2>Batch Prediction (CSV Upload)</h2>
-            <p class="hint">Upload a CSV with columns: Time, V1&ndash;V28, Amount.</p>
-            <form action="/predict/csv" method="post" enctype="multipart/form-data">
-                <input type="file" name="file" accept=".csv" required>
-                <button type="submit" class="primary">Upload &amp; Predict</button>
-            </form>
+        <!-- Batch panel -->
+        <section class="panel" id="panel-batch">
+            <div class="card">
+                <h2>Batch Prediction</h2>
+                <p class="desc">Upload a CSV file with columns <strong>Time, V1&ndash;V28, Amount</strong>. Every row is scored and flagged.</p>
+
+                <form action="/predict/csv" method="post" enctype="multipart/form-data" id="csv-form">
+                    <label class="dropzone" id="dropzone">
+                        <div class="icon">&#128228;</div>
+                        <div class="big">Drop your CSV here or click to browse</div>
+                        <div class="small">Accepted format: .csv</div>
+                        <div class="fname" id="fname"></div>
+                        <input type="file" name="file" id="file-input" accept=".csv" required>
+                    </label>
+                    <div class="actions">
+                        <button type="submit" class="primary" id="upload-btn">&#128200; Upload &amp; Predict</button>
+                    </div>
+                </form>
+            </div>
         </section>
 
         <footer>
-            <p>API docs available at <a href="/docs">/docs</a></p>
+            <p>Interactive API documentation available at <a href="/docs">/docs</a></p>
         </footer>
     </div>
+
     <script src="/static/script.js"></script>
 </body>
 </html>

@@ -7,28 +7,44 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+
     <div class="container">
         <header>
-            <h1>Batch Prediction Results</h1>
+            <span class="badge"><span class="dot"></span> Batch Analysis Complete</span>
+            <h1>Prediction Results</h1>
+            <p class="subtitle">Every transaction in your file has been scored by the model.</p>
         </header>
 
-        <section class="card">
+        <div class="card">
             <div class="summary">
                 <div class="stat">
                     <span class="stat-value">{{ total }}</span>
-                    <span class="stat-label">Total transactions</span>
+                    <span class="stat-label">Total Transactions</span>
                 </div>
                 <div class="stat fraud">
                     <span class="stat-value">{{ fraud_count }}</span>
-                    <span class="stat-label">Flagged as fraud</span>
+                    <span class="stat-label">Flagged as Fraud</span>
+                </div>
+                <div class="stat legitc">
+                    <span class="stat-value">{{ total - fraud_count }}</span>
+                    <span class="stat-label">Legitimate</span>
                 </div>
             </div>
-            <p class="hint">Showing first {{ shown }} of {{ total }} rows.</p>
+
+            <p class="desc">Showing the first {{ shown }} of {{ total }} rows.</p>
             <div class="table-wrap">
                 {{ table | safe }}
             </div>
-            <a href="/" class="primary btn-link">&larr; Back</a>
-        </section>
+
+            <a href="/" class="primary btn-link">&larr; Analyze Another File</a>
+        </div>
+
+        <footer>
+            <p>Interactive API documentation available at <a href="/docs">/docs</a></p>
+        </footer>
     </div>
 </body>
 </html>
